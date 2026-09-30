@@ -27,7 +27,7 @@ class ChipManufacturerRelationController extends AdminController
             $grid->column('manufacturer.mnf_img')->image();
             $grid->column('relation_type')->using(MappingConst::MANUFACTURER_RELATION_TYPE);
             $grid->column('created_at');
-            $grid->column('updated_at')->sortable();
+            $grid->column('updated_at')->sortable()->hide();
 
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->panel();

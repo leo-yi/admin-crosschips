@@ -30,7 +30,7 @@ class ChipManufacturerRelatedController extends AdminController
             $grid->column('relatedManufacturer.mnf_img')->image();
             $grid->column('sort')->sortable();
             $grid->column('created_at');
-            $grid->column('updated_at')->sortable();
+            $grid->column('updated_at')->sortable()->hide();
 
             $grid->quickSearch(['id']);
 

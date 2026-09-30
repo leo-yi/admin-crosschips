@@ -24,7 +24,7 @@ class ChipStationController extends AdminController
             $grid->column('name')->badge();
             $grid->column('param')->copyable();
             $grid->column('created_at');
-            $grid->column('updated_at')->sortable();
+            $grid->column('updated_at')->sortable()->hide();
 
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->equal('id');

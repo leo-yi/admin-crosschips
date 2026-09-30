@@ -32,7 +32,7 @@ class ChipManufacturerController extends AdminController
             $grid->column('sort')->sortable();
             $grid->column('is_active')->switch();
             $grid->column('created_at');
-            $grid->column('updated_at')->sortable();
+            $grid->column('updated_at')->sortable()->hide();
 
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->panel();

@@ -23,7 +23,6 @@ class ChipProductStockController extends AdminController
     protected function grid()
     {
         return Grid::make(ChipProductStock::with(['product', 'manufacturer']), function (Grid $grid) {
-            $grid->hideColumns(['updated_at']);
             $grid->model()->orderBy('id', 'desc');
             $grid->column('id')->sortable();
             $grid->column('product.mpn')->copyable();
@@ -35,7 +34,7 @@ class ChipProductStockController extends AdminController
                 return $this->price.' '.$this->currency_code;
             });
             $grid->column('created_at');
-            $grid->column('updated_at')->sortable();
+            $grid->column('updated_at')->sortable()->hide();
 
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->panel();

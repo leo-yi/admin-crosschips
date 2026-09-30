@@ -38,7 +38,7 @@ class ChipCategoryController extends AdminController
             $grid->column('category_count');
             $grid->column('category_desc');
             $grid->column('created_at');
-            $grid->column('updated_at')->sortable();
+            $grid->column('updated_at')->sortable()->hide();
 
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->panel();

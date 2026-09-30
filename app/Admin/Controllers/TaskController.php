@@ -59,7 +59,7 @@ class TaskController extends AdminController
             $grid->column('response');
             $grid->column('message');
             $grid->column('created_at');
-            $grid->column('updated_at')->sortable();
+            $grid->column('updated_at')->sortable()->hide();
             if (Admin::user()->id != 1) {
                 $grid->disableActions();
             }

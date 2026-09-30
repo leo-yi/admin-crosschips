@@ -54,6 +54,7 @@ class ChipRfqController extends AdminController
             $grid->column('user_agent');
             $grid->column('accept_language');
             $grid->column('created_at');
+            $grid->column('updated_at')->sortable()->hide();
 
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->equal('id');
