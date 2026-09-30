@@ -99,16 +99,56 @@ mv $D/index $D/index.failed.$(date +%Y%m%d%H%M%S)
 mv $D/index-bak $D/index
 ```
 
-## 6. 人工维护项（流水线不做）
+## 6. 运行环境与人工维护项
 
-| 项 | 说明 |
-| --- | --- |
-| nginx root | 必须是 `/www/sites/admin.crosschips.com/index/public`；当前配置指向 `index`，会返回 403。配置文件 `/opt/1panel/www/conf.d/admin.crosschips.com.conf` |
-| `index/.env` | Laravel 只认项目根下的 `.env`。站点根 `/opt/1panel/www/sites/admin.crosschips.com/.env` 需要落到 `index/.env`；补齐后重跑一次流水线，artisan 步骤才会执行（migrate / 缓存） |
-| 队列 worker | `chip_product_stock_import` 队列消费者需常驻（php85 容器的 supervisor 或 1Panel 计划任务） |
-| PHP 扩展 | php85 已补装 `sodium`（`dcat-plus/laravel-admin → tymon/jwt-auth → lcobucci/jwt` 需要）。扩展文件在 `/opt/1panel/runtime/php/php85/extensions/`，若在 1Panel 面板重建 PHP 环境后丢失，需重新安装 |
+| 项 | 状态 | 说明 |
+| --- | --- | --- |
+| nginx root | ✅ 已处理 | `/opt/1panel/www/conf.d/admin.crosschips.com.conf` 的 root 已指向 `.../index/public`（原先指向 `index`，会 403） |
+| `index/.env` | ✅ 已处理 | 已从站点根复制为 `index/.env`，站点根那份保留 |
+| PHP 扩展 `sodium` | ✅ 已装 | `dcat-plus/laravel-admin → tymon/jwt-auth → lcobucci/jwt` 需要；容器内 `apt-get install -y libsodium-dev && docker-php-ext-install sodium` |
+| PHP 扩展 `redis` | ✅ 已装 | `.env` 是 `REDIS_CLIENT=phpredis`，session/cache/queue 全依赖它；容器内 `pecl install redis && docker-php-ext-enable redis` |
+| Cloudflare 回源 | ✅ 已配置 | 见 §7 |
+| nginx 配置持久性 | ⚠️ 注意 | 该文件由 1Panel 生成，若在面板里重新编辑站点配置，手工追加的 `real_ip` 段可能被覆盖，需重新追加 |
+| 队列 worker | ⏳ 待办 | `chip_product_stock_import` 队列消费者需常驻（php85 容器的 supervisor 或 1Panel 计划任务） |
 
-## 7. 常见问题
+> 两个扩展的 `.so` 与 ini 都落在 1Panel 挂载的宿主目录（`/opt/1panel/runtime/php/php85/extensions`、`.../conf/conf.d`），容器重建不丢；但在 1Panel 面板"重建"PHP 环境后可能被面板记录覆盖，届时重装即可。
+>
+> 装完扩展让**运行中的** php-fpm 生效（别用 `restart`，会中断同容器所有站点）：
+>
+> ```bash
+> PID=$(docker top php85 -o pid,cmd | awk '/php-fpm: master/{print $1}')
+> grep -q redis.so /proc/$PID/maps      # 确认是否已加载
+> kill -USR2 "$PID"                     # 优雅重载，不中断连接
+> ```
+
+## 7. Cloudflare 回源配置
+
+小黄云开启后，源站与 Cloudflare 之间的约定（都在 `/opt/1panel/www/conf.d/admin.crosschips.com.conf`）：
+
+| 关注点 | 配置 | 说明 |
+| --- | --- | --- |
+| 回源协议 | Cloudflare SSL/TLS 模式 = **Full**（HTTPS 回源） | 源站 443 有证书（Let's Encrypt，1Panel 申请）。源站有 `if ($scheme = http) return 301`，**Flexible（HTTP 回源）模式会死循环**，必须保持 Full |
+| HTTPS 识别 | 无需额外配置 | `fastcgi_params` 自带 `fastcgi_param HTTPS $https if_not_empty`；HTTPS 回源时 PHP 的 `$_SERVER['HTTPS']='on'`，Laravel 生成的链接、302 的 Location、session cookie 的 `secure` 都正确（实测验证） |
+| 真实客户端 IP | `real_ip_header CF-Connecting-IP;` + Cloudflare IP 段 + `real_ip_recursive on;` | ⚠️ **Cloudflare 不发送 `X-Real-IP`**。同机 `api.crosschips.com` / `crosschips.com` 里写的 `real_ip_header X-Real-IP` 实际是失效的（应用仍看到 CF 的 IP）。实测 CF 回源携带的是 `CF-Connecting-IP` 与 `X-Forwarded-For` |
+| 跳转链 | `http→https`(301) → `/` → `/admin` → `/admin/auth/login` | 后两跳是 Dcat Admin 未登录时的固有行为，最终 200，**不是**回源故障 |
+
+**诊断方法**：临时往 server 块加诊断头，直接看回源真相（用完记得删）：
+
+```nginx
+add_header X-Debug-Scheme $scheme always;
+add_header X-Debug-RemoteAddr $remote_addr always;
+add_header X-Debug-CFIP $http_cf_connecting_ip always;
+```
+
+```bash
+curl -sI https://admin.crosschips.com/admin/auth/login | grep -i x-debug
+# scheme=https  → CF 走 HTTPS 回源（Full）
+# remoteaddr=真实客户端 IP（配了 real_ip 之后）
+```
+
+改完记得 `docker exec 1Panel-openresty-9v2B /usr/local/openresty/nginx/sbin/nginx -t && ... -s reload`。
+
+## 8. 常见问题
 
 | 现象 | 处理 |
 | --- | --- |
@@ -117,8 +157,12 @@ mv $D/index-bak $D/index
 | 流水线黄灯（UNSTABLE） | 代码已部署成功，只是站点探测没过：看 `ci/jenkins-healthcheck.sh` 的输出（403 = nginx root 没指到 `public`，5xx = `.env`/DB/Redis 问题） |
 | rsync 报 `apk add rsync 失败` | 服务器到 Alpine 源不通，可在 php85 容器里改成手工 rsync，或改用其他带 rsync 的镜像 |
 | 属主不对（写成 root） | 脚本最后有 `chown -R 1000:1000`；若手工操作请自行 `chown -R linuxuser:linuxuser .../index` |
+| 站点 500 且日志报缺 `APP_KEY` | `index/.env` 不在位（Laravel 只认项目根下的 `.env`） |
+| 后台日志里客户端 IP 全是 CF 的地址 | `real_ip_header` 用了 Cloudflare 不发送的 `X-Real-IP`，改成 `CF-Connecting-IP` |
+| 浏览器报重定向次数过多 | Cloudflare SSL/TLS 模式是 Flexible（HTTP 回源），而源站对 http 有 301 强制跳转 → 改成 Full |
+| 登录页样式/脚本 404 | 漏了 `php artisan vendor:publish --tag=dcat-admin-assets --force`（流水线里有，缺 `.env` 时会被跳过） |
 
-## 8. 与旧部署方式的区别
+## 9. 与旧部署方式的区别
 
 | | 旧（`deploy/deploy.sh` 手工 rsync） | 现在（本机 Jenkins） |
 | --- | --- | --- |
