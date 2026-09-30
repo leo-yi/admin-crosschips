@@ -129,7 +129,7 @@ mv $D/index-bak $D/index
 | --- | --- | --- |
 | 回源协议 | Cloudflare SSL/TLS 模式为 **Full / Full (strict)**（不可用 Flexible） | 实测：https 客户端 → HTTPS 回源（源站日志 `HTTP/2.0`、`$scheme=https`）；http 客户端 → HTTP 回源（`HTTP/1.1`）后由源站 301 到 https。源站 443 有 Let's Encrypt 证书；`if ($scheme = http) return 301` 若遇到 Flexible 模式会变成无限重定向 |
 | HTTPS 识别 | 无需额外配置 | `fastcgi_params` 自带 `fastcgi_param HTTPS $https if_not_empty`；HTTPS 回源时 PHP 的 `$_SERVER['HTTPS']='on'`，Laravel 生成的链接、302 的 Location、session cookie 的 `secure` 都正确（实测验证） |
-| 真实客户端 IP | `real_ip_header CF-Connecting-IP;` + Cloudflare IP 段 + `real_ip_recursive on;` | ⚠️ **Cloudflare 不发送 `X-Real-IP`**。同机 `api.crosschips.com` / `crosschips.com` 里写的 `real_ip_header X-Real-IP` 实际是失效的（应用仍看到 CF 的 IP）。实测 CF 回源携带的是 `CF-Connecting-IP` 与 `X-Forwarded-For` |
+| 真实客户端 IP | `real_ip_header CF-Connecting-IP;` + Cloudflare IP 段 + `real_ip_recursive on;` | ⚠️ **Cloudflare 不发送 `X-Real-IP`**，真实 IP 只在 `CF-Connecting-IP`（另有 `X-Forwarded-For`）。同机 `api.crosschips.com` / `crosschips.com` 原本照抄了 `X-Real-IP` 因而失效，**已于 2026-09-30 一并改为 `CF-Connecting-IP`**，三个站点现已统一，见下方「批量修复同机其他站点」 |
 | 跳转链 | `http→https`(301) → `/` → `/admin` → `/admin/auth/login` | 后两跳是 Dcat Admin 未登录时的固有行为，最终 200，**不是**回源故障 |
 | 客户端 HTTP 访问 | CF 会以 **HTTP 回源**，由源站 301 到 HTTPS | 实测：经 CF 的 http 请求会在源站日志留下 `HTTP/1.1 301` 记录，而 https 请求是 `HTTP/2.0`。结果正确（最终都在 https），但多一次明文回源。可在 CF 开 **Always Use HTTPS** 让边缘直接 301；源站已下发 HSTS，浏览器二次访问会自动升级 |
 
@@ -157,6 +157,30 @@ curl -sI https://admin.crosschips.com/admin/auth/login | grep -i x-debug
 
 改完记得 `docker exec 1Panel-openresty-9v2B /usr/local/openresty/nginx/sbin/nginx -t && ... -s reload`。
 
+### 批量修复同机其他站点
+
+1Panel 建站时生成的 `real_ip_header` 默认值是 `X-Real-IP`，所以**一台机器上所有站点都会踩同一个坑**。修复要连带做，否则新站对了、老站还在记 CF 的 IP。
+
+```bash
+cd /opt/1panel/www/conf.d
+TS=$(date +%Y%m%d%H%M%S)
+for f in *.conf; do
+  cp -p "$f" "${f}.bak.${TS}"
+  sed -i -E 's/^[[:space:]]*real_ip_header[[:space:]]+X-Real-IP;.*/    real_ip_header CF-Connecting-IP;/' "$f"
+done
+docker exec 1Panel-openresty-9v2B openresty -t && docker exec 1Panel-openresty-9v2B openresty -s reload
+```
+
+`openresty -s reload` 是优雅重载：master 保持长跑、worker 换新，**不中断连接**（用 `docker top ... -o pid,etime,cmd` 可看到只有 worker 的 ELAPSED 归零）。
+
+**验证方法**（改前改后各看一次同一类请求最直观）：
+
+- `access_log` 已开启的站点，直接 `tail` 日志对比 —— 改前 client IP 是 `172.71.x.x` / `104.16.x.x` 这类 **Cloudflare 节点地址**，改后变成真实客户端 IP（爬虫流量最容易观察，`bingbot` / `PetalBot` 的 IP 一眼可辨）。
+- `access_log off` 的站点（1Panel 部分站点默认关闭），可**临时**把第 7 行改成 `access_log /www/sites/<域名>/log/access.log main;`，reload → 经 CF 发一个真实请求 → 看日志 → 改回 `off` 并 reload、删掉临时日志文件。全程可逆，对线上无影响。
+- 走代理的机器上 `curl` 时注意：`remote_ip` 会显示 `127.0.0.1`，别误判成请求没发出去；看源站日志才准。
+
+改完后 `crosschips.com` 的 `proxy_set_header X-Real-IP $remote_addr` 传给 Next.js（:3000）的就是还原后的真实地址了 —— 应用层做 IP 统计/限流才有意义。
+
 ## 8. 常见问题
 
 | 现象 | 处理 |
@@ -167,7 +191,7 @@ curl -sI https://admin.crosschips.com/admin/auth/login | grep -i x-debug
 | rsync 报 `apk add rsync 失败` | 服务器到 Alpine 源不通，可在 php85 容器里改成手工 rsync，或改用其他带 rsync 的镜像 |
 | 属主不对（写成 root） | 脚本最后有 `chown -R 1000:1000`；若手工操作请自行 `chown -R linuxuser:linuxuser .../index` |
 | 站点 500 且日志报缺 `APP_KEY` | `index/.env` 不在位（Laravel 只认项目根下的 `.env`） |
-| 后台日志里客户端 IP 全是 CF 的地址 | `real_ip_header` 用了 Cloudflare 不发送的 `X-Real-IP`，改成 `CF-Connecting-IP` |
+| 后台日志里客户端 IP 全是 CF 的地址 | `real_ip_header` 用了 Cloudflare 不发送的 `X-Real-IP`，改成 `CF-Connecting-IP`。这是 **1Panel 的默认值**，同机所有站点都要一起改（见 §7「批量修复同机其他站点」） |
 | 浏览器报重定向次数过多 | Cloudflare SSL/TLS 模式是 Flexible（HTTP 回源），而源站对 http 有 301 强制跳转 → 改成 Full |
 | 登录页样式/脚本 404 | 漏了 `php artisan vendor:publish --tag=dcat-admin-assets --force`（流水线里有，缺 `.env` 时会被跳过） |
 
