@@ -48,10 +48,12 @@ class Brand
             ],
             'crosschips' => [
                 'name' => 'Crosschips',
-                // logo_crosschips.svg 取自 crosschips.com 前端，已含品牌 wordmark，
-                // 故 logo 不再追加 &nbsp;Crosschips 文字，避免重复。
-                'logo' => '<img src="/logo_crosschips.svg" height="35">',
-                'logo_mini' => '<img src="/logo_crosschips.svg" height="35">',
+                // logo_crosschips.png 取自 crosschips.com 前端 public/logo-crosschips.png
+                // （1000×249 透明底，4:1），已含品牌 wordmark，故不再追加文字避免重复。
+                // 只设 height、宽度按 4:1 自适应（height=35 → 约 140 宽）；勿写死 width 以免拉伸变形。
+                'logo' => '<img src="/logo_crosschips.png" height="35">',
+                // 侧边栏折叠后空间窄，改用方形图标（logo_crosschips_icon.svg，1:1）而非 4:1 wordmark，避免溢出/变形。
+                'logo_mini' => '<img src="/logo_crosschips_icon.svg" height="35">',
                 // crosschips 专属 favicon，取自 crosschips.com 前端 public/favicon.ico。
                 'favicon' => '/favicon_crosschips.ico',
                 'site_url' => 'https://www.crosschips.com',
