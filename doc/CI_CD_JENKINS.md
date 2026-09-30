@@ -127,7 +127,7 @@ mv $D/index-bak $D/index
 
 | 关注点 | 配置 | 说明 |
 | --- | --- | --- |
-| 回源协议 | Cloudflare SSL/TLS 模式 = **Full**（HTTPS 回源） | 源站 443 有证书（Let's Encrypt，1Panel 申请）。源站有 `if ($scheme = http) return 301`，**Flexible（HTTP 回源）模式会死循环**，必须保持 Full |
+| 回源协议 | Cloudflare SSL/TLS 模式为 **Full / Full (strict)**（不可用 Flexible） | 实测：https 客户端 → HTTPS 回源（源站日志 `HTTP/2.0`、`$scheme=https`）；http 客户端 → HTTP 回源（`HTTP/1.1`）后由源站 301 到 https。源站 443 有 Let's Encrypt 证书；`if ($scheme = http) return 301` 若遇到 Flexible 模式会变成无限重定向 |
 | HTTPS 识别 | 无需额外配置 | `fastcgi_params` 自带 `fastcgi_param HTTPS $https if_not_empty`；HTTPS 回源时 PHP 的 `$_SERVER['HTTPS']='on'`，Laravel 生成的链接、302 的 Location、session cookie 的 `secure` 都正确（实测验证） |
 | 真实客户端 IP | `real_ip_header CF-Connecting-IP;` + Cloudflare IP 段 + `real_ip_recursive on;` | ⚠️ **Cloudflare 不发送 `X-Real-IP`**。同机 `api.crosschips.com` / `crosschips.com` 里写的 `real_ip_header X-Real-IP` 实际是失效的（应用仍看到 CF 的 IP）。实测 CF 回源携带的是 `CF-Connecting-IP` 与 `X-Forwarded-For` |
 | 跳转链 | `http→https`(301) → `/` → `/admin` → `/admin/auth/login` | 后两跳是 Dcat Admin 未登录时的固有行为，最终 200，**不是**回源故障 |
