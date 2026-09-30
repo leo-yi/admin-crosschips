@@ -131,6 +131,15 @@ mv $D/index-bak $D/index
 | HTTPS 识别 | 无需额外配置 | `fastcgi_params` 自带 `fastcgi_param HTTPS $https if_not_empty`；HTTPS 回源时 PHP 的 `$_SERVER['HTTPS']='on'`，Laravel 生成的链接、302 的 Location、session cookie 的 `secure` 都正确（实测验证） |
 | 真实客户端 IP | `real_ip_header CF-Connecting-IP;` + Cloudflare IP 段 + `real_ip_recursive on;` | ⚠️ **Cloudflare 不发送 `X-Real-IP`**。同机 `api.crosschips.com` / `crosschips.com` 里写的 `real_ip_header X-Real-IP` 实际是失效的（应用仍看到 CF 的 IP）。实测 CF 回源携带的是 `CF-Connecting-IP` 与 `X-Forwarded-For` |
 | 跳转链 | `http→https`(301) → `/` → `/admin` → `/admin/auth/login` | 后两跳是 Dcat Admin 未登录时的固有行为，最终 200，**不是**回源故障 |
+| 客户端 HTTP 访问 | CF 会以 **HTTP 回源**，由源站 301 到 HTTPS | 实测：经 CF 的 http 请求会在源站日志留下 `HTTP/1.1 301` 记录，而 https 请求是 `HTTP/2.0`。结果正确（最终都在 https），但多一次明文回源。可在 CF 开 **Always Use HTTPS** 让边缘直接 301；源站已下发 HSTS，浏览器二次访问会自动升级 |
+
+**Cloudflare 侧建议**（源站侧无需再改）：
+
+| 设置 | 建议值 | 原因 |
+| --- | --- | --- |
+| SSL/TLS 模式 | **Full** 或 **Full (strict)** | 源站是 Let's Encrypt 有效证书，strict 可防中间人；**切勿用 Flexible**（源站有 http→https 301，会造成无限重定向） |
+| Always Use HTTPS | 建议开启 | 让 http 请求在 CF 边缘就 301，不再明文回源 |
+| 小黄云代理 | 保持开启 | 关掉（DNS only）会暴露源站 IP、失去 CDN/WAF/DDoS 防护 |
 
 **诊断方法**：临时往 server 块加诊断头，直接看回源真相（用完记得删）：
 
