@@ -1,0 +1,58 @@
+@php
+    $depth = $item['depth'] ?? 0;
+
+    $horizontal = config('admin.layout.horizontal_menu');
+
+    $defaultIcon = config('admin.menu.default_icon', 'feather icon-circle');
+@endphp
+
+@if($builder->visible($item))
+    @if(empty($item['children']))
+        <li class="nav-item">
+            <a data-id="{{ $item['id'] ?? '' }}" @if(mb_strpos($item['uri'], '://') !== false) target="_blank" @endif
+               href="{{ $builder->getUrl($item['uri']) }}"
+               class="nav-link {!! $builder->isActive($item) ? 'active' : '' !!}">
+                {!! str_repeat('&nbsp;', $depth) !!}<i class="fa fa-fw {{ $item['icon'] ?: $defaultIcon }}"></i>
+                <p>
+                    {!! $builder->translate($item['title']) !!}
+                </p>
+            </a>
+        </li>
+    @else
+        @php
+            // 父菜单：当所有子菜单均不可见时，隐藏父菜单本身
+            $showParent = false;
+            foreach ($item['children'] as $child) {
+                if ($builder->visible($child)) {
+                    $showParent = true;
+                    break;
+                }
+            }
+        @endphp
+        @if($showParent)
+            <li class="{{ $horizontal ? 'dropdown' : 'has-treeview' }} {{ $horizontal && $depth > 0 ? 'dropright ':'' }} {{ $depth > 0 ? 'dropdown-submenu' : '' }} nav-item {{ $builder->isActive($item) ? 'menu-open' : '' }}">
+                <a href="#"  data-id="{{ $item['id'] ?? '' }}"
+                   class="nav-link {{ $builder->isActive($item) ? ($horizontal ? 'active' : '') : '' }}
+                        {{ $horizontal ? 'dropdown-toggle' : '' }}">
+                    {!! str_repeat('&nbsp;', $depth) !!}<i class="fa fa-fw {{ $item['icon'] ?: $defaultIcon }}"></i>
+                    <p>
+                        {!! $builder->translate($item['title']) !!}
+
+                        @if(! $horizontal)
+                            <i class="right fa fa-angle-left"></i>
+                        @endif
+                    </p>
+                </a>
+                <ul class="nav {{ $horizontal ? 'dropdown-menu' : 'nav-treeview' }} {{ $horizontal && $depth > 0 ? 'horizontal-ul ':'' }}">
+                    @foreach($item['children'] as $item)
+                        @php
+                            $item['depth'] = $depth + 1;
+                        @endphp
+
+                        @include('admin::partials.menu', ['item' => $item])
+                    @endforeach
+                </ul>
+            </li>
+        @endif
+    @endif
+@endif
