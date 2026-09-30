@@ -4,29 +4,20 @@ use App\Support\Brand;
 
 /*
 |--------------------------------------------------------------------------
-| 多品牌配置
+| 品牌配置（单品牌：Crosschips）
 |--------------------------------------------------------------------------
 |
-| 一套代码同时支撑多个品牌（hksaturday / crosschips），通过环境变量
-| BRAND_ID 切换当前品牌。预设与解析逻辑封装在 App\Support\Brand 中，
-| 这里仅作对外暴露（供运行期 config('brand.*') 读取）。
+| 品牌信息统一收敛在 App\Support\Brand（固定值），这里仅作对外暴露
+| （供运行期 config('brand.*') 读取）。任何品牌差异（名称、logo、favicon、
+| 站点 URL、CDN 域名、联系邮箱、邮件主题）都必须走 config('brand.*')，
+| 不要硬编码。
 |
-| 各部署站点在 .env 中设置 BRAND_ID=xxx 即可生效；如需覆盖某一项预设，
-| 可设置对应的 BRAND_* 变量（优先级高于 preset）。
-|
-| 部署入口见 deploy/deploy.sh：
-|   bash deploy/deploy.sh hksaturday   # 部署 hksaturday 品牌
-|   bash deploy/deploy.sh crosschips   # 部署 crosschips 品牌
-|
-| 注意：config 文件会在 `php artisan optimize` 时编译进缓存，env() 仅
-| 在编译期有意义；运行期读取的是已缓存的值。
+| 注意：config 文件会在 `php artisan optimize` 时编译进缓存；运行期读取
+| 的是已缓存的值。
 |
 */
 
 return [
-    // 当前品牌标识。
-    'id' => Brand::id(),
-
     // 品牌展示名称。
     'name' => Brand::name(),
 
@@ -67,7 +58,4 @@ return [
         'badge_bg' => env('BRAND_COLOR_BADGE_BG', '#e3f2fd'),
         'badge_text' => env('BRAND_COLOR_BADGE_TEXT', '#1976d2'),
     ],
-
-    // 全部品牌预设（只读参考，便于排查）。
-    'presets' => Brand::presets(),
 ];

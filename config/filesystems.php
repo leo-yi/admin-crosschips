@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\Brand;
+
 return [
 
     /*
@@ -62,7 +64,7 @@ return [
             'secret' => env('AWS_SECRET_ACCESS_KEY'),
             'region' => env('AWS_DEFAULT_REGION'),
             'bucket' => env('AWS_BUCKET'),
-            'url' => env('BRAND_CDN_URL', env('AWS_URL')),
+            'url' => Brand::cdnUrl(),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => true,

@@ -2,35 +2,15 @@
 set -euo pipefail
 
 # ==============================
-# 多品牌参数化部署脚本
-# 用法: bash deploy.sh [crosschips|hksaturday]
-# 默认: hksaturday
+# 部署脚本（单品牌：Crosschips）
+# 用法: bash deploy.sh
 # ==============================
 
-BRAND=${1:-hksaturday}
-
-case "$BRAND" in
-    crosschips)
-        PROJECT_NAME="admin.crosschips.com"
-        WORKSPACE="/root/workspace/admin.hksaturday.com"
-        DEPLOY_PATH="/opt/1panel/www/sites/admin.crosschips.com/index"
-        CONTAINER_NAME="php85"
-        CONTAINER_WORKDIR="/www/sites/admin.crosschips.com/index"
-        ;;
-    hksaturday)
-        PROJECT_NAME="admin.hksaturday.com"
-        WORKSPACE="/root/workspace/admin.hksaturday.com"
-        DEPLOY_PATH="/opt/1panel/www/sites/admin.hksaturday.com/index"
-        CONTAINER_NAME="php85"
-        CONTAINER_WORKDIR="/www/sites/admin.hksaturday.com/index"
-        ;;
-    *)
-        echo "用法: bash deploy.sh [crosschips|hksaturday]"
-        echo "  crosschips  部署 crosschips.com (容器 php85)"
-        echo "  hksaturday  部署 hksaturday.com (容器 php85，默认)"
-        exit 1
-        ;;
-esac
+PROJECT_NAME="admin.crosschips.com"
+WORKSPACE="/root/workspace/admin.crosschips.com"
+DEPLOY_PATH="/opt/1panel/www/sites/admin.crosschips.com/index"
+CONTAINER_NAME="php85"
+CONTAINER_WORKDIR="/www/sites/admin.crosschips.com/index"
 
 # ==============================
 # 加载配置
@@ -110,7 +90,7 @@ main() {
     trap release_lock EXIT
 
     start_time=$(date +%s)
-    log "🚀 开始部署 $PROJECT_NAME (品牌: $BRAND)..."
+    log "🚀 开始部署 $PROJECT_NAME ..."
 
     # 检查工作目录
     [ ! -d "$WORKSPACE" ] && error_exit "工作目录不存在: $WORKSPACE"

@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\Brand;
+
 return [
 
     /*
@@ -32,7 +34,7 @@ return [
     ],
 
     'nextjs' => [
-        'site_url' => env('NEXTJS_SITE_URL', 'https://www.hksaturday.com'),
+        'site_url' => env('NEXTJS_SITE_URL', Brand::siteUrl()),
         'revalidate_secret' => env('NEXTJS_REVALIDATE_SECRET'),
     ],
 

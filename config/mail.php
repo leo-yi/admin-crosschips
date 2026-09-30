@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\Brand;
+
 return [
 
     /*
@@ -119,6 +121,6 @@ return [
     'is_open' => env('MAIL_IS_OPEN', false),
 
     // RFQ 通知默认收件人（支持逗号分隔多个邮箱）
-    'recipient' => env('MAIL_RECIPIENT', env('BRAND_EMAIL', 'sales@hksaturday.com')),
+    'recipient' => env('MAIL_RECIPIENT', Brand::email()),
 
 ];
