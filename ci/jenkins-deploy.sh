@@ -45,8 +45,16 @@ docker info >/dev/null 2>&1 || die "无法连接宿主 Docker（/var/run/docker.
 [ -n "${WORKSPACE:-}" ] || die "WORKSPACE 未设置（本脚本必须由 Jenkins 调用）"
 [ -f "${WORKSPACE}/artisan" ] || die "工作区不是 Laravel 项目（缺 artisan）：${WORKSPACE}"
 
+# 工作区在宿主上的真实路径：Jenkins 容器内 /var/jenkins_home 由宿主 HOST_JH 挂载而来。
+# 注意：容器内看不到 /opt/... 这类宿主路径，所以借用宿主机根目录（只读挂载）做检查。
 HOST_WS="${HOST_JH}${WORKSPACE#/var/jenkins_home}"
-[ -d "${HOST_WS}" ] || die "宿主机上看不到工作区：${HOST_WS}"
+if ! docker run --rm -v /:/host:ro "${ALPINE_IMAGE}" sh -c "
+      test -f /host${HOST_WS}/artisan && test -d /host${SITE_ROOT}
+    " 2>/dev/null; then
+  die "宿主路径检查失败 —— 工作区应为 ${HOST_WS}（需含 artisan），站点目录应为 ${SITE_ROOT}
+      请核对宿主机 ${HOST_JH} 是否就是 Jenkins 容器内 /var/jenkins_home 的挂载源"
+fi
+
 docker ps --format '{{.Names}}' | grep -qx "$PHP_CONTAINER" || die "PHP 容器未运行：${PHP_CONTAINER}"
 
 log "源码工作区（宿主）: ${HOST_WS}"
