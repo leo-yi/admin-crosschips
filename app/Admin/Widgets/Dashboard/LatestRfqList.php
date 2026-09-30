@@ -35,16 +35,12 @@ class LatestRfqList implements Renderable
 
         $rows = '';
         foreach ($list as $item) {
-            $company = e($item->company ?: '-');
-            $contact = e($item->contact_name ?: '-');
             $email = e($item->email ?: '-');
             $createdAt = optional($item->created_at)->format('m-d H:i');
             $url = admin_url('chip-rfq/'.$item->id);
 
             $rows .= <<<HTML
 <tr>
-    <td class="text-truncate" style="max-width:140px" title="{$company}">{$company}</td>
-    <td class="text-truncate" style="max-width:100px" title="{$contact}">{$contact}</td>
     <td class="text-truncate" style="max-width:200px" title="{$email}">{$email}</td>
     <td>{$createdAt}</td>
     <td class="text-right">
@@ -66,8 +62,6 @@ HTML;
         <table class="table table-sm mb-0">
             <thead>
                 <tr>
-                    <th>公司</th>
-                    <th>联系人</th>
                     <th>邮箱</th>
                     <th>提交时间</th>
                     <th class="text-right">操作</th>
