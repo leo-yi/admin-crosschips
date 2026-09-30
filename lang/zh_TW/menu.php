@@ -24,6 +24,7 @@ return [
         'index-banner' => '首頁輪播',
         'chip-product-stock' => '產品庫存',
         'chip-manufacturer-relation' => '製造商關聯',
+        'chip-manufacturer-related' => '推薦品牌管理',
         'task' => '異步任務',
         'chip-rfq' => 'RFQ',
         'chip-station' => '投放站點',
