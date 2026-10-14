@@ -45,6 +45,14 @@ class SyncMenuPermissionCommand extends Command
             'existing_id' => 11,
             'perm_slug' => 'group-web-admin',
         ],
+        '会员管理' => [
+            'title' => 'Members',
+            'icon' => 'fa-users',
+            'uri' => '/member',
+            'order' => 3,
+            'existing_id' => null,
+            'perm_slug' => 'group-member',
+        ],
     ];
 
     /** 资源路由 => 所属分组 */
@@ -59,6 +67,7 @@ class SyncMenuPermissionCommand extends Command
         'task' => '运营管理',
         'chip-rfq' => '运营管理',
         'chip-station' => '运营管理',
+        'chip-member' => '会员管理',
     ];
 
     protected string $defaultIcon = 'fa-circle-o';

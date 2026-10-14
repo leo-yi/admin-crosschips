@@ -7,6 +7,7 @@ use App\Admin\Controllers\ChipCategoryController;
 use App\Admin\Controllers\ChipManufacturerController;
 use App\Admin\Controllers\ChipManufacturerRelatedController;
 use App\Admin\Controllers\ChipManufacturerRelationController;
+use App\Admin\Controllers\ChipMemberController;
 use App\Admin\Controllers\ChipProductController;
 use App\Admin\Controllers\ChipProductStockController;
 use App\Admin\Controllers\ChipRfqController;
@@ -53,6 +54,11 @@ Route::group([
     $router->resource('chip-rfq', ChipRfqController::class);
     // 推广站点
     $router->resource('chip-station', ChipStationController::class);
+
+    /* ==============================会员管理============================== */
+    // 前台会员（只读 + 禁用/启用，无新建/删除）
+    $router->resource('chip-member', ChipMemberController::class)
+        ->only(['index', 'show', 'edit', 'update']);
 
     /* ==============================后台api接口============================== */
     $router->group(['prefix' => 'api'], function (Router $route) {
