@@ -20,10 +20,24 @@ class ChipRfqController extends AdminController
      */
     protected function grid()
     {
-        return Grid::make(ChipRfq::with(['products']), function (Grid $grid) {
+        return Grid::make(ChipRfq::with(['products', 'member']), function (Grid $grid) {
             $grid->hideColumns(['upload_file_id', 'ip', 'user_agent', 'accept_language']);
             $grid->model()->orderBy('id', 'desc');
             $grid->column('id')->sortable();
+            $grid->column('member', trans('chip-rfq.fields.member'))->display(function ($member) {
+                return $member ? $member->email : '-';
+            });
+            $grid->column('status', trans('chip-rfq.fields.status'))->using([
+                'pending' => trans('chip-rfq.options.status_pending'),
+                'quoted' => trans('chip-rfq.options.status_quoted'),
+                'won' => trans('chip-rfq.options.status_won'),
+                'lost' => trans('chip-rfq.options.status_lost'),
+            ])->label([
+                'pending' => 'warning',
+                'quoted' => 'primary',
+                'won' => 'success',
+                'lost' => 'default',
+            ]);
             $grid->column('email');
             $grid->column('phone');
             $grid->column('company');
@@ -58,7 +72,13 @@ class ChipRfqController extends AdminController
 
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->equal('id');
-
+                $filter->like('email');
+                $filter->equal('status')->select([
+                    'pending' => trans('chip-rfq.options.status_pending'),
+                    'quoted' => trans('chip-rfq.options.status_quoted'),
+                    'won' => trans('chip-rfq.options.status_won'),
+                    'lost' => trans('chip-rfq.options.status_lost'),
+                ]);
             });
         });
     }

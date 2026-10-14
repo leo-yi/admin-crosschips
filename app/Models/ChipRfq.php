@@ -34,4 +34,9 @@ class ChipRfq extends Model
     {
         return $this->hasMany(ChipRfqProduct::class, 'rfq_id', 'id');
     }
+
+    public function member()
+    {
+        return $this->belongsTo(ChipMember::class, 'member_id', 'id');
+    }
 }

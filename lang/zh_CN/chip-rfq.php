@@ -18,8 +18,14 @@ return [
         'accept_language' => '访问语言',
         'detail' => '详情',
         'view_rfq' => '查看RFQ',
+        'member' => '关联会员',
+        'status' => '状态',
     ],
     'options' => [
+        'status_pending' => '待处理',
+        'status_quoted' => '已报价',
+        'status_won' => '已成交',
+        'status_lost' => '已关闭',
     ],
     'permissions' => [
         'resource' => ['title' => 'RFQ', 'group' => '运营管理'],
