@@ -67,6 +67,8 @@ class SyncMenuPermissionCommand extends Command
         'task' => '运营管理',
         'chip-rfq' => '运营管理',
         'chip-station' => '运营管理',
+        'chip-search-hot-keyword' => '运营管理',
+        'chip-member-search-history' => '运营管理',
         'chip-member' => '会员管理',
     ];
 

@@ -16,6 +16,7 @@ return [
         // 分组菜单
         'web_admin' => '运营管理',
         'basic_data' => '基础数据',
+        'members' => '会员管理',
         'help_center' => '帮助中心',
         // 资源路由菜单
         'chip-category' => '分类',
@@ -28,6 +29,9 @@ return [
         'task' => '异步任务',
         'chip-rfq' => 'RFQ',
         'chip-station' => '投放站点',
+        'chip-search-hot-keyword' => '热门搜索关键词',
+        'chip-member-search-history' => '会员搜索历史',
+        'chip-member' => '会员列表',
         'help_categories' => '帮助分类',
         'helps' => '帮助文章',
         'notifications' => '系统通知',

@@ -27,12 +27,22 @@ class ChipMemberRoutesTest extends TestCase
         $routes = [];
         foreach (app('router')->getRoutes() as $route) {
             $uri = $route->uri();
-            if (str_contains($uri, 'chip-member')) {
+            if ($this->isChipMemberRoute($uri)) {
                 $routes[$uri] = $route->methods();
             }
         }
 
         return $routes;
+    }
+
+    /**
+     * 精确匹配 chip-member 资源路由（admin/chip-member / admin/chip-member/{id} / ...），
+     * 避免误伤 chip-member-search-history 等前缀相同的兄弟路由。
+     * 注意：route()->uri() 含 admin 前缀，故不能用 ^ 锚定开头。
+     */
+    private function isChipMemberRoute(string $uri): bool
+    {
+        return (bool) preg_match('#(^|/)chip-member(/|$)#', $uri);
     }
 
     public function test_chip_member_resource_is_registered(): void
@@ -70,7 +80,7 @@ class ChipMemberRoutesTest extends TestCase
     public function test_update_maps_to_member_controller(): void
     {
         foreach (app('router')->getRoutes() as $route) {
-            if (! str_contains($route->uri(), 'chip-member')) {
+            if (! $this->isChipMemberRoute($route->uri())) {
                 continue;
             }
             $this->assertStringContainsString(
