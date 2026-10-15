@@ -8,9 +8,11 @@ use App\Admin\Controllers\ChipManufacturerController;
 use App\Admin\Controllers\ChipManufacturerRelatedController;
 use App\Admin\Controllers\ChipManufacturerRelationController;
 use App\Admin\Controllers\ChipMemberController;
+use App\Admin\Controllers\ChipMemberSearchHistoryController;
 use App\Admin\Controllers\ChipProductController;
 use App\Admin\Controllers\ChipProductStockController;
 use App\Admin\Controllers\ChipRfqController;
+use App\Admin\Controllers\ChipSearchHotKeywordController;
 use App\Admin\Controllers\ChipStationController;
 use App\Admin\Controllers\IndexBannerController;
 use App\Admin\Controllers\MenuController;
@@ -54,6 +56,11 @@ Route::group([
     $router->resource('chip-rfq', ChipRfqController::class);
     // 推广站点
     $router->resource('chip-station', ChipStationController::class);
+    // 热门搜索关键词（含 Excel 导入）
+    $router->resource('chip-search-hot-keyword', ChipSearchHotKeywordController::class);
+    // 会员搜索历史（只读聚合分析，无新建/编辑/删除）
+    $router->resource('chip-member-search-history', ChipMemberSearchHistoryController::class)
+        ->only(['index', 'show']);
 
     /* ==============================会员管理============================== */
     // 前台会员（只读 + 禁用/启用，无新建/删除）
